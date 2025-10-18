@@ -15,7 +15,7 @@ load_dotenv()
 class Train12306MCPClient:
     """12306-MCP 标准客户端 (基于MCP JSON-RPC 2.0协议)"""
     
-    def __init__(self, mcp_server_url: str = "http://localhost:12306"):
+    def __init__(self, mcp_server_url: str = 'http://localhost:12306'):
         self.mcp_server_url = mcp_server_url
         self.session: Optional[aiohttp.ClientSession] = None
         self.sse_task: Optional[asyncio.Task] = None
@@ -208,21 +208,67 @@ class Train12306MCPClient:
             return result
         
         return {"error": "工具调用失败"}
-    
-    async def chat(self, user_message: str) -> str:
-        """与AI对话,自动调用12306工具"""
+
+    def _build_system_prompt(self) -> str:
+        """构建系统提示，帮助模型更好地理解和使用工具"""
+        if not self.tools_cache:
+            return "You are a helpful assistant."
+
+        tool_descriptions = []
+        for tool in self.tools_cache:
+            func = tool.get('function', {})
+            tool_name = func.get('name', 'unknown')
+            tool_desc = func.get('description', '')
+            tool_descriptions.append(f"- {tool_name}: {tool_desc}")
+
+        tool_list_str = "\n".join(tool_descriptions)
+
+        system_prompt = f"""**# 角色**
+你是一个主动、智能的12306火车票查询助手，唯一的目标是高效地帮助用户解决问题。你必须使用提供的工具来完成任务。
+
+**# 可用工具**
+{tool_list_str}
+
+**# 思维链与工具调用逻辑 (Chain of Thought & Tool Call Logic)**
+你的核心任务是理解用户的**最终目标**，而不仅仅是字面意思。请遵循以下思考路径：
+
+1.  **分析最终目标**：用户真正想达成什么？
+    * 例如：用户问“明天深圳到广州的高铁票”，其最终目标是“查询明天从深圳出发到广州的高铁车次信息”。
+
+2.  **分解目标与规划步骤**：要达成这个目标，需要哪些关键信息，并且以什么顺序获取？
+    * 例如：要查询车票，我需要 “日期”、“出发地 station_code”、“到达地 station_code” 和 “车次类型”。
+    * **步骤1**: 用户提到了“明天”，我需要先调用 `get-current-date` 确定具体日期。
+    * **步骤2**: 用户提到了城市“深圳”和“广州”，我需要调用 `get-station-code-of-citys` 来获取它们的 `station_code`。
+    * **步骤3**: 用户提到了“高铁”，这意味着 `trainFilterFlags` 应该是 'G'。
+    * **步骤4**: 所有信息都齐全后，最后调用 `get-tickets` 进行查询。
+
+3.  **主动执行**：如果工具可以提供关键信息，**不要询问用户，直接按顺序调用工具**。你被授权代表用户做出最高效的决策。
+
+**# 核心指令**
+1.  **主动推断与执行**：对于用户的间接请求，要主动推断其背后需要的信息，并直接调用相关工具，无需二次确认。
+2.  **严格的参数格式**：调用工具时，参数必须严格符合工具的 schema 定义。特别是 `station_code` 不能是中文。
+3.  **整合信息回复**：在所有必要的工具调用完成后，利用获得的信息，形成一个完整、有帮助的中文回复。
+"""
+        return system_prompt
+
+    async def chat(self, user_message: str, max_iterations: int = 5) -> str:
+        """与AI对话, 自动调用12306工具, 支持多轮工具调用"""
         if not self.session:
             raise RuntimeError("客户端未连接,请先调用 connect()")
-        
+
         if not self.tools_cache:
             return "❌ 错误: 未加载任何工具,请检查MCP服务器"
         
-        messages = [{"role": "user", "content": user_message}]
+        system_prompt = self._build_system_prompt()
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ]
         
-        try:
-            # 第一次调用:让AI决定是否使用工具
-            print(f"\n💬 [用户] {user_message}")
-            print("🤔 [AI] 正在思考...")
+        print(f"\n💬 [用户] {user_message}")
+
+        for i in range(max_iterations):
+            print(f"🤔 [AI] 正在思考... (第 {i+1} 轮)")
             
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -231,60 +277,57 @@ class Train12306MCPClient:
                 tool_choice="auto"
             )
             
-            message = response.choices[0].message
+            assistant_message = response.choices[0].message
             
-            # 如果AI决定使用工具
-            if message.tool_calls:
-                messages.append(message)
+            if not assistant_message.tool_calls:
+                print("✅ [AI] 任务完成, 生成最终回复。")
+                return assistant_message.content or "任务已完成。"
+
+            messages.append(assistant_message)
+
+            for tool_call in assistant_message.tool_calls:
+                function_name = tool_call.function.name
                 
-                # 执行所有工具调用
-                for tool_call in message.tool_calls:
-                    function_name = tool_call.function.name
-                    
-                    try:
-                        function_args = json.loads(tool_call.function.arguments)
-                    except json.JSONDecodeError:
-                        return f"❌ 工具 '{function_name}' 的参数格式错误"
-                    
-                    # 调用MCP工具
-                    tool_result = await self.call_tool(function_name, function_args)
-                    
-                    # 提取文本内容
-                    if isinstance(tool_result, dict):
-                        if "content" in tool_result:
-                            content_list = tool_result["content"]
-                            if isinstance(content_list, list) and len(content_list) > 0:
-                                content_text = content_list[0].get("text", json.dumps(tool_result, ensure_ascii=False))
-                            else:
-                                content_text = json.dumps(tool_result, ensure_ascii=False)
-                        else:
-                            content_text = json.dumps(tool_result, ensure_ascii=False)
-                    else:
-                        content_text = str(tool_result)
-                    
-                    # 添加工具结果到消息历史
+                try:
+                    function_args = json.loads(tool_call.function.arguments)
+                except json.JSONDecodeError:
+                    error_message = f"❌ 工具 '{function_name}' 的参数格式错误"
+                    print(error_message)
                     messages.append({
                         "tool_call_id": tool_call.id,
                         "role": "tool",
                         "name": function_name,
-                        "content": content_text,
+                        "content": error_message,
                     })
+                    continue
+
+                tool_result = await self.call_tool(function_name, function_args)
                 
-                # 第二次调用:让AI基于工具结果生成最终回复
-                print("📝 [AI] 正在生成回复...")
-                final_response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                )
+                if isinstance(tool_result, dict) and "content" in tool_result:
+                    content_list = tool_result["content"]
+                    if isinstance(content_list, list) and len(content_list) > 0:
+                        content_text = content_list[0].get("text", json.dumps(tool_result, ensure_ascii=False))
+                    else:
+                        content_text = json.dumps(tool_result, ensure_ascii=False)
+                else:
+                    content_text = str(tool_result)
                 
-                return final_response.choices[0].message.content or ""
-            
-            # 如果不需要工具,直接返回
-            return message.content or ""
-            
-        except Exception as e:
-            return f"❌ 对话错误: {e}"
-    
+                print(f"  > 工具结果: {content_text[:250]}...")
+
+                messages.append({
+                    "tool_call_id": tool_call.id,
+                    "role": "tool",
+                    "name": function_name,
+                    "content": content_text,
+                })
+        
+        print(f"⚠️ 达到最大迭代次数 ({max_iterations})，强制生成最终回复。")
+        final_response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+        )
+        return final_response.choices[0].message.content or "已达到最大处理轮次。"
+
     async def chat_loop(self):
         """交互式对话循环"""
         print("\n" + "="*70)
@@ -347,7 +390,9 @@ class Train12306MCPClient:
 
 async def main():
     """主函数"""
-    mcp_server_url = os.getenv('MCP_SERVER_URL', 'https://mcp.api-inference.modelscope.net/e15d742f57a045/sse')#'http://localhost:12306')
+    url = 'http://localhost:12306'
+    #url = 'https://mcp.api-inference.modelscope.net/e15d742f57a045/sse'
+    mcp_server_url = os.getenv('MCP_SERVER_URL', url)
     
     client = Train12306MCPClient(mcp_server_url)
     
