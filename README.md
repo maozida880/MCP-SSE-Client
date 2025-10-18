@@ -1,15 +1,19 @@
 # 12306-MCP 智能查询客户端
 
-\<p align="center"\>
-\<strong\>一个基于 MCP (Model Context Protocol) 协议的 12306 火车票智能查询客户端，可以通过自然语言与大语言模型（LLM）对话，实现复杂的票务查询。\</strong\>
-\</p\>
 
-\<p align="center"\>
-\<img src="[https://img.shields.io/badge/Python-3.7+-blue.svg?logo=python\&logoColor=white](https://www.google.com/search?q=https://img.shields.io/badge/Python-3.7%2B-blue.svg%3Flogo%3Dpython%26logoColor%3Dwhite)" alt="Python Version"\>
-\<img src="[https://img.shields.io/badge/MCP%20Protocol-JSON--RPC%202.0-brightgreen](https://www.google.com/search?q=https://img.shields.io/badge/MCP%2520Protocol-JSON--RPC%25202.0-brightgreen)" alt="MCP Protocol"\>
-\<img src="[https://img.shields.io/badge/LLM-Tool%20Calling-orange](https://www.google.com/search?q=https://img.shields.io/badge/LLM-Tool%2520Calling-orange)" alt="LLM Tool Calling"\>
-\<img src="[https://img.shields.io/github/license/Joooook/12306-mcp?style=flat-square\&color=000000](https://www.google.com/search?q=https://img.shields.io/github/license/Joooook/12306-mcp%3Fstyle%3Dflat-square%26color%3D000000)" alt="License"\>
-\</p\>
+## 📋 **项目信息**
+- **Python**：版本 3.7+
+- **MCP 协议**：基于 JSON-RPC 2.0
+- **LLM 工具调用** (Large Language Model Tool Calling)
+- **开源许可证** ( MIT )
+
+ **12306 火车票查询的 MCP (Model Context Protocol) 项目**，专门为大语言模型提供火车票查询的工具调用功能。
+
+## 🛠️ **项目用途**
+这类项目通常用于：
+- 为 AI 助手提供实时火车票查询能力
+- 标准化 LLM 与外部服务的数据交互
+- 支持列车信息、余票、车站代码等查询功能
 
 -----
 
