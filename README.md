@@ -1,266 +1,167 @@
-# 12306-MCP 智能客户端
+# 12306-MCP 智能查询客户端
 
-基于 **MCP JSON-RPC 2.0** 协议的12306火车票智能查询客户端。
+\<p align="center"\>
+\<strong\>一个基于 MCP (Model Context Protocol) 协议的 12306 火车票智能查询客户端，可以通过自然语言与大语言模型（LLM）对话，实现复杂的票务查询。\</strong\>
+\</p\>
 
-## ✨ 特性
+\<p align="center"\>
+\<img src="[https://img.shields.io/badge/Python-3.7+-blue.svg?logo=python\&logoColor=white](https://www.google.com/search?q=https://img.shields.io/badge/Python-3.7%2B-blue.svg%3Flogo%3Dpython%26logoColor%3Dwhite)" alt="Python Version"\>
+\<img src="[https://img.shields.io/badge/MCP%20Protocol-JSON--RPC%202.0-brightgreen](https://www.google.com/search?q=https://img.shields.io/badge/MCP%2520Protocol-JSON--RPC%25202.0-brightgreen)" alt="MCP Protocol"\>
+\<img src="[https://img.shields.io/badge/LLM-Tool%20Calling-orange](https://www.google.com/search?q=https://img.shields.io/badge/LLM-Tool%2520Calling-orange)" alt="LLM Tool Calling"\>
+\<img src="[https://img.shields.io/github/license/Joooook/12306-mcp?style=flat-square\&color=000000](https://www.google.com/search?q=https://img.shields.io/github/license/Joooook/12306-mcp%3Fstyle%3Dflat-square%26color%3D000000)" alt="License"\>
+\</p\>
 
-- ✅ **标准MCP协议** - 完全符合MCP JSON-RPC 2.0规范
-- ✅ **SSE实时通信** - 支持服务器推送事件
-- ✅ **智能对话** - LLM自动理解需求并调用工具
-- ✅ **完整工具支持** - 支持所有# 12306-MCP SSE客户端
+-----
 
-一个基于SSE(Server-Sent Events)模式的12306-MCP智能客户端,可以通过自然语言查询火车票信息。
+## ✨ 核心特性
 
-## 功能特性
+  - 🤖 **高级智能对话**：内置强大的系统提示（System Prompt），引导大语言模型进行**多轮工具调用（Multi-turn Tool Calling）**，自动规划并执行复杂查询任务。
+  - 🔧 **全功能支持**：全面支持 `12306-mcp` 服务端提供的所有工具，包括：
+      - `get-tickets`: 查询余票信息（支持按车次类型筛选）
+      - `get-interline-tickets`: 查询中转换乘方案
+      - `get-train-route-stations`: 查询列车经停站
+      - `get-station-code-of-citys`: 查询城市或车站的编码
+      - `get-current-date`: 获取当前日期以解析“明天”、“后天”等相对时间
+  - 🔌 **标准协议**：客户端与服务端之间采用标准的 MCP JSON-RPC 2.0 协议通过 HTTP/SSE 进行通信。
+  - ⚙️ **高度可配置**：支持通过环境变量轻松切换不同的大语言模型提供商（如 DeepSeek, OpenAI, Ollama 本地模型等）。
+  - 🖥️ **用户友好**：提供清晰的命令行交互界面，并支持 `tools`, `clear`, `quit` 等便捷指令。
 
-- ✅ **SSE实时通信**: 与12306-MCP服务器建立持久连接
-- 🤖 **智能对话**: 使用大语言模型理解自然语言查询
-- 🔧 **自动工具调用**: AI自动选择合适的12306接口
-- 📊 **完整工具支持**: 支持所有12306-MCP提供的工具
-  - 查询余票信息
-  - 查询中转方案
-  - 查询列车经停站
-  - 查询车站信息
-  - 获取当前日期
+## 🚀 快速开始
 
-## 安装步骤
+### 1\. 安装依赖
 
-### 1. 安装依赖
+请确保您的 Python 环境 \>= 3.7，然后安装所需的依赖库。
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 配置环境变量
+*(如果项目中没有 `requirements.txt` 文件，请根据 `mcp_see_client.py` 中的 `import` 手动安装 `aiohttp`, `aiohttp-sse-client`, `python-dotenv`, `openai`)*
 
-复制 `.env.example` 为 `.env` 并填写配置:
+### 2\. 配置环境变量
+
+复制 `.env.example` 文件为 `.env`，并根据您的配置填写：
 
 ```bash
 cp .env.example .env
 ```
 
-编辑 `.env` 文件:
+编辑 `.env` 文件内容：
 
 ```env
-# MCP服务器地址
+# 12306-MCP 服务器运行的地址和端口
 MCP_SERVER_URL=http://localhost:12306
 
-# API配置
-DEEPSEEK_API_KEY=your_api_key_here
-BASE_URL=https://api.deepseek.com
-MODEL=deepseek-chat
+# 大语言模型 API 配置 (以 DeepSeek 为例)
+DEEPSEEK_API_KEY="your_deepseek_api_key_here"
+BASE_URL="https://api.deepseek.com"
+MODEL="deepseek-chat"
 ```
 
-### 3. 启动12306-MCP服务器
+### 3\. 启动 12306-MCP 服务器
 
-首先需要启动12306-MCP服务器(HTTP模式):
+在运行客户端之前，必须先启动后端的 `12306-mcp` 服务。请参考 [12306-mcp 项目文档](https://github.com/Joooook/12306-mcp)进行安装和启动。推荐使用 npx 启动：
 
 ```bash
-# 使用npm
+# --port 参数必须与 .env 文件中的 MCP_SERVER_URL 端口一致
 npx -y 12306-mcp --port 12306
-
-# 或使用Docker
-docker run -p 12306:8080 -d 12306-mcp npx 12306-mcp --port 8080
 ```
 
-### 4. 运行客户端
+### 4\. 运行客户端
+
+一切就绪后，运行 Python 客户端程序：
 
 ```bash
-python mcp_sse_client.py
+python mcp_see_client.py
 ```
 
-## 使用示例
+## 💡 使用示例
 
-启动客户端后,可以用自然语言提问:
+客户端启动后，您可以像聊天一样用自然语言提出复杂问题。
 
-```
-💬 请输入问题: 明天从北京到上海的高铁票
+#### 示例 1：多步查询 - 查询明天的高铁票
 
-🤖 [AI回复]
-根据查询结果,明天(2025-10-19)从北京到上海的高铁票信息如下:
+> **❓ 请输入问题: 明天深圳到广州的高铁票**
 
-1. G1次 (07:00出发 -> 11:28到达,历时4小时28分)
-   - 二等座: 有票 553元
-   - 一等座: 有票 933元
-   - 商务座: 有票 1748元
+**AI 内部执行流程：**
 
-2. G3次 (08:00出发 -> 12:35到达,历时4小时35分)
-   ...
-```
+1.  **思考**: 用户想查票，需要日期、出发地代码、目的地代码。
+2.  **调用 `get-current-date`**: 获取今天是 `2025-10-18`，计算出明天是 `2025-10-19`。
+3.  **调用 `get-station-code-of-citys`**: 分别查询 "深圳" 和 "广州" 的车站代码。
+4.  **调用 `get-tickets`**: 使用以上信息，结合“高铁”(`G`)作为筛选条件，查询车票。
+5.  **生成回复**: 整合查询结果，以清晰的格式呈现给用户。
 
-更多示例:
+-----
 
-```
-# 查询中转方案
-💬 从深圳到拉萨,经过西安中转
+#### 示例 2：中转查询
 
-# 查询列车经停站
-💬 G1033次列车明天经过哪些站?
+> **❓ 请输入问题: 从深圳到拉萨，最好在西安中转**
 
-# 筛选特定时间
-💬 后天下午3点到6点从杭州到北京的动车票
+-----
 
-# 查询车站信息
-💬 北京有哪些火车站?
-```
+#### 示例 3：经停站查询
 
-## 特殊命令
+> **❓ 请输入问题: G1033 这趟车明天都会经过哪些站？**
 
-在对话中可以使用以下命令:
+## 🔧 工作原理
 
-- `tools` - 查看所有可用工具
-- `quit` 或 `exit` - 退出程序
+本客户端是一个智能的“调度中心”，它本身不处理业务逻辑，而是将用户的自然语言请求交由大语言模型（LLM）进行分析和规划，然后精确地调用后端的 `12306-MCP` 服务来执行具体任务。
 
-## 工作原理
-
-```
-┌─────────┐         SSE          ┌──────────────┐
-│  用户   │ ◄─────────────────── │ 12306-MCP    │
-│         │                      │   服务器     │
-└────┬────┘                      └──────┬───────┘
-     │                                  │
-     │  自然语言查询                      │
-     ▼                                  │
-┌─────────┐                            │
-│   客户端 │ ─────── HTTP POST ─────────┘
-│  (本程序) │         (工具调用)
-└────┬────┘
-     │
-     │  Tool Calling
-     ▼
-┌─────────┐
-│   LLM   │ (DeepSeek/GPT-4/本地模型)
-│  (AI)   │
-└─────────┘
+```mermaid
+graph TD
+    A[用户] -- 自然语言 --> B{智能客户端 (mcp_see_client.py)};
+    B -- "1. 思考需要什么工具" --> C[LLM (如 DeepSeek)];
+    C -- "2. 决定调用工具A" --> B;
+    B -- "3. HTTP POST (JSON-RPC)" --> D[12306-MCP 服务器];
+    D -- "4. 返回工具A结果" --> B;
+    B -- "5. 将结果喂给LLM，继续思考" --> C;
+    C -- "6. 决定调用工具B" --> B;
+    B -- "7. ...重复调用..." --> D;
+    D -- "8. 返回最终所需信息" --> B;
+    B -- "9. 将所有结果汇总给LLM" --> C;
+    C -- "10. 生成最终答复" --> B;
+    B -- "11. 格式化输出" --> A;
 ```
 
-1. 用户输入自然语言查询
-2. 客户端将查询发送给LLM
-3. LLM决定需要调用哪些12306工具
-4. 客户端通过HTTP POST调用MCP服务器
-5. MCP服务器返回结果
-6. LLM基于结果生成用户友好的回复
+这种**多轮工具调用**的能力，使得客户端能够自主解决需要多个前置步骤才能完成的复杂问题，而无需用户进行繁琐的手动分步查询。
 
-## 架构特点
+## 🛠️ 配置与开发
 
-### SSE连接
-- 使用SSE保持与MCP服务器的长连接
-- 实时接收服务器推送的事件通知
-- 异步处理事件流
+### 更换 LLM 提供商
 
-### 工具调用流程
-```python
-# 1. 获取工具列表
-tools = await client._fetch_tools()
+本客户端兼容所有遵循 OpenAI API 格式的大模型。您只需修改 `.env` 文件即可无缝切换。
 
-# 2. LLM决定工具调用
-response = llm.chat(tools=tools)
+**OpenAI GPT-4:**
 
-# 3. 执行工具调用
-result = await client.call_tool(name, args)
-
-# 4. 生成最终回复
-final = llm.chat(messages + tool_results)
-```
-
-## 配置说明
-
-### MCP服务器URL
 ```env
-MCP_SERVER_URL=http://localhost:12306
+DEEPSEEK_API_KEY="sk-your_openai_api_key"
+BASE_URL="https://api.openai.com/v1"
+MODEL="gpt-4-turbo"
 ```
-确保与12306-MCP服务器的 `--port` 参数一致
 
-### API密钥
-支持多种LLM提供商:
+**本地模型 (Ollama):**
 
-**DeepSeek** (推荐,性价比高):
 ```env
-DEEPSEEK_API_KEY=sk-xxx
-BASE_URL=https://api.deepseek.com
-MODEL=deepseek-chat
+DEEPSEEK_API_KEY="ollama"
+BASE_URL="http://localhost:11434/v1"
+MODEL="qwen2:7b" # 或者你本地运行的其他模型
 ```
 
-**OpenAI**:
-```env
-DEEPSEEK_API_KEY=sk-xxx
-BASE_URL=https://api.openai.com/v1
-MODEL=gpt-4-turbo-preview
-```
+### 故障排除
 
-**本地模型(Ollama)**:
-```env
-DEEPSEEK_API_KEY=ollama
-BASE_URL=http://localhost:11434/v1
-MODEL=qwen2:7b
-```
+1.  **连接失败 (`Cannot connect to host...`)**:
 
-## 故障排除
+      * 请确认 `12306-mcp` 服务器已在本地成功启动。
+      * 检查 `.env` 文件中的 `MCP_SERVER_URL` 地址和端口是否与服务器启动时的一致。
 
-### 1. 连接失败
-```
-✗ 连接失败: Cannot connect to host localhost:12306
-```
-**解决**: 确保12306-MCP服务器已启动
+2.  **未能获取工具列表**:
 
-### 2. 未获取到工具
-```
-警告: 未能获取工具列表
-```
-**解决**: 
-- 检查MCP服务器URL是否正确
-- 确认服务器运行在HTTP模式(`--port`参数)
+      * 大概率是 `MCP_SERVER_URL` 配置错误，或服务器未能正常启动。
 
-### 3. API调用失败
-```
-对话过程中发生错误: Invalid API key
-```
-**解决**: 检查`.env`文件中的API密钥配置
+3.  **API 调用失败 (`Invalid API key`)**:
 
-## 开发说明
-
-### 核心类结构
-
-```python
-class Train12306MCPClient:
-    async def connect()           # 连接MCP服务器
-    async def _listen_sse()       # 监听SSE事件
-    async def _fetch_tools()      # 获取工具列表
-    async def call_tool()         # 调用MCP工具
-    async def chat()              # 智能对话
-    async def chat_loop()         # 交互循环
-    async def cleanup()           # 清理资源
-```
-
-### 扩展开发
-
-如需扩展功能,可以:
-
-1. **添加工具过滤**:
-```python
-# 只使用特定工具
-filtered_tools = [t for t in tools if t['function']['name'] in ['get-tickets']]
-```
-
-2. **自定义提示词**:
-```python
-system_message = {
-    "role": "system",
-    "content": "你是12306火车票查询助手..."
-}
-messages = [system_message, user_message]
-```
-
-3. **添加对话历史**:
-```python
-self.conversation_history = []
-```
+      * 请检查 `.env` 文件中的 `DEEPSEEK_API_KEY` 和 `BASE_URL` 是否正确无误。
 
 ## 许可证
 
-MIT License
-
-## 相关项目
-
-- [12306-MCP](https://github.com/Joooook/12306-mcp) - MCP服务器
-- [MCP Specification](https://modelcontextprotocol.io) - MCP协议规范
+本项目基于 [MIT License](https://www.google.com/search?q=LICENSE) 开源。
