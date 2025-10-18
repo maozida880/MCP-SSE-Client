@@ -391,7 +391,6 @@ class Train12306MCPClient:
 async def main():
     """主函数"""
     url = 'http://localhost:12306'
-    #url = 'https://mcp.api-inference.modelscope.net/e15d742f57a045/sse'
     mcp_server_url = os.getenv('MCP_SERVER_URL', url)
     
     client = Train12306MCPClient(mcp_server_url)
