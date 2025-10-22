@@ -1,0 +1,19 @@
+# 12306-MCP 客户端 V2.0 依赖包
+
+# 核心依赖
+aiohttp>=3.9.0
+aiohttp-sse-client>=0.2.1
+python-dotenv>=1.0.0
+openai>=1.0.0
+
+# 可选依赖（用于未来扩展）
+# fastapi>=0.104.0        # P2: API 服务化
+# uvicorn>=0.24.0         # P2: ASGI 服务器
+# streamlit>=1.28.0       # P2: WebUI
+# redis>=5.0.0            # P1: 分布式缓存
+
+# 开发依赖
+# pytest>=7.4.0
+# pytest-asyncio>=0.21.0
+# black>=23.0.0
+# flake8>=6.1.0

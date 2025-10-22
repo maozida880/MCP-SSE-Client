@@ -1,0 +1,64 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 虚拟环境
+venv/
+ENV/
+env/
+.venv/
+mcp-client/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 环境变量和敏感信息（重要！）
+.env
+.env.local
+.env.*.local
+
+# 日志文件
+*.log
+mcp_client.log
+
+# 运行时生成的文件
+conversation_history.json
+user_profile.json
+
+# 测试和临时文件
+.pytest_cache/
+.coverage
+htmlcov/
+*.tmp
+*.temp
+
+# 压缩文件
+*.zip
+*.rar
+*.7z
+
+# 操作系统
+Thumbs.db
+.DS_Store
