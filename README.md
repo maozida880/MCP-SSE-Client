@@ -99,7 +99,7 @@ npx -y 12306-mcp --port 12306
 ### 5. 运行客户端
 
 ```bash
-python MCP-SEE-Client-V2.py
+python MCP-SEE-Client.py
 ```
 
 ---
