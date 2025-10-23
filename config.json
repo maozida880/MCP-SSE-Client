@@ -1,0 +1,40 @@
+{
+  "mcp_server": {
+    "url": "http://localhost:12306",
+    "connection": {
+      "retry_attempts": 3,
+      "retry_delay": 1.0,
+      "max_retry_delay": 30.0,
+      "timeout_seconds": 30,
+      "sse_reconnect_enabled": true,
+      "sse_reconnect_interval": 5,
+      "heartbeat_interval": 60
+    }
+  },
+  "llm": {
+    "provider": "deepseek",
+    "model": "deepseek-chat",
+    "base_url": "https://api.deepseek.com",
+    "max_iterations": 5,
+    "system_prompt_path": "system_prompt.txt"
+  },
+  "memory": {
+    "session_enabled": true,
+    "persistent_enabled": true,
+    "user_profile_path": "user_profile.json",
+    "history_path": "conversation_history.json",
+    "max_context_messages": 20,
+    "load_recent_history": true,
+    "recent_history_count": 3
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file": "mcp_client.log",
+    "console_enabled": true
+  },
+  "features": {
+    "confirmation_mode": false,
+    "confirmation_threshold": 3
+  }
+}

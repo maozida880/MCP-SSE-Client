@@ -1,0 +1,24 @@
+{
+  "user_id": "default_user",
+  "created_at": "2025-10-22T00:00:00Z",
+  "preferences": {
+    "default_departure_city": "",
+    "default_arrival_city": "",
+    "preferred_seat_type": "二等座",
+    "preferred_train_types": ["G", "D"],
+    "notification_enabled": true
+  },
+  "aliases": {
+    "home": "",
+    "office": "",
+    "常去": []
+  },
+  "travel_history": {
+    "frequent_routes": [],
+    "last_queries": []
+  },
+  "metadata": {
+    "total_queries": 0,
+    "last_active": ""
+  }
+}
